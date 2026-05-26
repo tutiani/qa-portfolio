@@ -237,60 +237,156 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 4. "Report a Bug" Form Submission & Modal
+  // 4. CI/CD Pipeline Visual Simulator
   // ==========================================
-  const bugForm = document.getElementById('bugReportForm');
+  const runPipelineBtn = document.getElementById('runPipelineBtn');
+  const pipelineConsoleLog = document.getElementById('pipelineConsoleLog');
+  const pipelineStages = {
+    lint: document.getElementById('stage-lint'),
+    cypress: document.getElementById('stage-cypress'),
+    postman: document.getElementById('stage-postman'),
+    k6: document.getElementById('stage-k6'),
+    deploy: document.getElementById('stage-deploy')
+  };
+
+  function logPipeline(text, color = '#c9d1d9') {
+    const p = document.createElement('p');
+    p.innerHTML = text;
+    p.style.color = color;
+    pipelineConsoleLog.appendChild(p);
+    pipelineConsoleLog.scrollTop = pipelineConsoleLog.scrollHeight;
+  }
+
+  function updateStageState(stageName, state, labelText) {
+    const el = pipelineStages[stageName];
+    if (el) {
+      el.className = `pipeline-stage-item ${state}`;
+      const label = el.querySelector('.stage-status-label');
+      if (label) label.textContent = labelText;
+    }
+  }
+
+  const delayMs = (ms) => new Promise(res => setTimeout(res, ms));
+
+  if (runPipelineBtn) {
+    runPipelineBtn.addEventListener('click', async () => {
+      runPipelineBtn.disabled = true;
+      runPipelineBtn.textContent = 'Running...';
+      pipelineConsoleLog.innerHTML = '';
+      
+      // Reset stages to idle
+      Object.keys(pipelineStages).forEach(key => {
+        updateStageState(key, 'idle', 'Idle');
+      });
+
+      // 1. Lint and compile stage
+      logPipeline('[Runner] Starting stage 1: Code Lint & Compilation...', '#06b6d4');
+      updateStageState('lint', 'active', 'Running...');
+      await delayMs(400);
+      logPipeline('[Runner] $ eslint --ext .js,.html . --fix');
+      await delayMs(300);
+      logPipeline('[Runner] Lint check completed: 0 errors, 0 warnings found.', '#10b981');
+      updateStageState('lint', 'success', 'Passed');
+
+      // 2. Cypress E2E Regression stage
+      logPipeline('<br>[Runner] Starting stage 2: Cypress E2E Regression...', '#06b6d4');
+      updateStageState('cypress', 'active', 'Running...');
+      await delayMs(500);
+      logPipeline('[Cypress] Running 8 spec files on Chrome 126 (headless)...');
+      await delayMs(400);
+      logPipeline('[Cypress] spec: portfolio_structural.cy.js -> passed (42ms)');
+      logPipeline('[Cypress] spec: about_metrics.cy.js -> passed (34ms)');
+      logPipeline('[Cypress] spec: experience_flow.cy.js -> passed (70ms)');
+      await delayMs(300);
+      logPipeline('[Cypress] All E2E assertions completed successfully. (1.12s)', '#10b981');
+      updateStageState('cypress', 'success', 'Passed');
+
+      // 3. Postman API Validation stage
+      logPipeline('<br>[Runner] Starting stage 3: Postman API Validation...', '#06b6d4');
+      updateStageState('postman', 'active', 'Running...');
+      await delayMs(400);
+      logPipeline('[Newman] Sending GET /api/v1/projects -> status 200 OK (92ms)');
+      await delayMs(300);
+      logPipeline('[Newman] Sending POST /api/v1/healthcheck -> status 200 OK (45ms)');
+      logPipeline('[Newman] Schema checks passed: 100% integration validation success.', '#10b981');
+      updateStageState('postman', 'success', 'Passed');
+
+      // 4. K6 Load & Stress testing stage
+      logPipeline('<br>[Runner] Starting stage 4: K6 Latency & Load Test...', '#06b6d4');
+      updateStageState('k6', 'active', 'Running...');
+      await delayMs(500);
+      logPipeline('[k6] Generating transaction load: simulating 1000 virtual users...');
+      await delayMs(400);
+      logPipeline('[k6] Latency benchmark: p95 = 145ms, p99 = 280ms (Target SLA: < 2000ms)');
+      logPipeline('[k6] Request success rate: 100.00% under peak load curves.', '#10b981');
+      updateStageState('k6', 'success', 'Passed');
+
+      // 5. Deploy to Production stage
+      logPipeline('<br>[Runner] Starting stage 5: Production Deployment...', '#06b6d4');
+      updateStageState('deploy', 'active', 'Deploying...');
+      await delayMs(600);
+      logPipeline('[Runner] Bundling assets and generating Edge CDN distribution...');
+      await delayMs(400);
+      logPipeline('[Runner] Syncing build assets with remote servers...', '#9ca3af');
+      await delayMs(300);
+      logPipeline('[Runner] Deployment successfully completed! Live routes updated.', '#10b981');
+      updateStageState('deploy', 'success', 'Deployed');
+
+      logPipeline('<br>[Status] PIPELINE INTEGRITY GREEN. ALL SYSTEMS STABLE.', '#10b981');
+      runPipelineBtn.disabled = false;
+      runPipelineBtn.textContent = 'Trigger Pipeline';
+    });
+  }
+
+  // ==========================================
+  // 5. Contact Form Submission & Modal
+  // ==========================================
+  const contactForm = document.getElementById('contactMeForm');
   const ticketModal = document.getElementById('ticketModal');
   const jsonTicketPayload = document.getElementById('jsonTicketPayload');
   const closeModalBtn = document.getElementById('closeModalBtn');
-  const submitBugBtn = document.getElementById('submitBugBtn');
+  const submitContactBtn = document.getElementById('submitContactBtn');
 
-  if (bugForm && ticketModal) {
-    bugForm.addEventListener('submit', (e) => {
+  if (contactForm && ticketModal) {
+    contactForm.addEventListener('submit', (e) => {
       e.preventDefault();
       
-      // Temporarily change button to "Triaging..." status
-      const originalBtnText = submitBugBtn.innerHTML;
-      submitBugBtn.disabled = true;
-      submitBugBtn.innerHTML = `
+      const originalBtnText = submitContactBtn.innerHTML;
+      submitContactBtn.disabled = true;
+      submitContactBtn.innerHTML = `
         <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline-block; margin-right:6px; vertical-align:middle;">
           <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.2)"></circle>
           <path d="M4 12a8 8 0 0 1 8-8V0C5.37 0 0 5.37 0 12h4z" fill="currentColor"></path>
         </svg>
-        Triaging Bug...
+        Transmitting Message...
       `;
 
-      // Form values
-      const name = document.getElementById('reporterName').value;
-      const email = document.getElementById('reporterEmail').value;
-      const title = document.getElementById('bugTitle').value;
-      const severity = document.getElementById('bugSeverity').value;
-      const steps = document.getElementById('bugSteps').value;
-      const expected = document.getElementById('bugExpected').value || 'Establish direct contact / arrange technical discussion';
+      // Grab inputs
+      const name = document.getElementById('contactName').value;
+      const email = document.getElementById('contactEmail').value;
+      const org = document.getElementById('contactOrg').value || 'Independent';
+      const type = document.getElementById('contactType').value;
+      const message = document.getElementById('contactMessage').value;
 
-      // Generate simulated JIRA/Github Ticket ID
-      const randomIdNum = Math.floor(1000 + Math.random() * 9000);
-      const ticketId = `TUT-BUG-2026-${randomIdNum}`;
+      // Generate a secure transmission ID
+      const txId = `TX-${Math.floor(10000 + Math.random() * 90000)}-TUT`;
       
       const payload = {
-        ticket_id: ticketId,
-        reporter_details: {
+        transmission_id: txId,
+        sender: {
           name: name,
-          email: email
+          email: email,
+          organization: org
         },
-        issue_type: "Bug Report (Contact)",
-        summary: title,
-        severity: severity,
-        environment: "Production (Tutiani-Portfolio)",
-        steps_to_reproduce: steps.split('\n').map((step, idx) => step.trim() ? step.trim() : `${idx + 1}. Message detail`),
-        expected_result: expected,
-        actual_result: "Highly satisfied visitor submitted a message form.",
-        workflow_status: "BACKLOG (QA Triaged)",
-        created_at: new Date().toISOString(),
-        automatic_assignee: "Tutiani <tiany7597@gmail.com>"
+        routing: "SECURE_SSL_RELAY",
+        inquiry_type: type,
+        message_body: message,
+        delivery_status: "QUEUED_FOR_INBOX",
+        timestamp: new Date().toISOString(),
+        recipient: "Tutiani <tiany7597@gmail.com>"
       };
 
-      // Inject loader styling keyframes dynamically to spin
+      // Set loader keyframes if not defined
       if (!document.getElementById('spin-keyframes')) {
         const kfStyle = document.createElement('style');
         kfStyle.id = 'spin-keyframes';
@@ -306,23 +402,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(kfStyle);
       }
 
-      // Simulate network request validation
+      // Simulate API transit
       setTimeout(() => {
         // Populate modal with JSON
         jsonTicketPayload.textContent = JSON.stringify(payload, null, 2);
         
         // Reset form
-        bugForm.reset();
-        document.getElementById('bugActual').value = "Highly satisfied, filling bug report to contact.";
-        document.getElementById('bugEnv').value = "Production (Tutiani-Portfolio)";
+        contactForm.reset();
         
         // Show modal
         ticketModal.classList.add('active');
 
         // Restore button state
-        submitBugBtn.disabled = false;
-        submitBugBtn.innerHTML = originalBtnText;
-      }, 1200);
+        submitContactBtn.disabled = false;
+        submitContactBtn.innerHTML = originalBtnText;
+      }, 1000);
     });
 
     closeModalBtn.addEventListener('click', () => {
