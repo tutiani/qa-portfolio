@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3.0">
 </head>
 <body>
 
@@ -516,6 +516,46 @@
           <div class="pipeline-header-bar">
             <span class="ph-title"><span class="pulse-dot"></span> CI/CD BUILD RUNNER</span>
             <button class="btn btn-secondary btn-sm" id="runPipelineBtn">Trigger Pipeline</button>
+          </div>
+
+          <!-- Pipeline Parameter Inputs (Interactive Configuration) -->
+          <div class="pipeline-config-panel">
+            <div class="config-row">
+              <div class="config-group">
+                <label for="pipeBranch">Git Branch</label>
+                <select id="pipeBranch">
+                  <option value="main">main</option>
+                  <option value="feat/api-auth">feat/api-auth</option>
+                  <option value="hotfix/postgres-lock">hotfix/postgres-lock</option>
+                </select>
+              </div>
+              <div class="config-group">
+                <label for="pipeFramework">QA Suite</label>
+                <select id="pipeFramework">
+                  <option value="Cypress E2E">Cypress E2E</option>
+                  <option value="Playwright Regression">Playwright Regression</option>
+                  <option value="Newman API Spec">Newman API Spec</option>
+                </select>
+              </div>
+            </div>
+            <div class="config-row">
+              <div class="config-group">
+                <label for="pipeEnv">Target Env</label>
+                <select id="pipeEnv">
+                  <option value="Production">Production</option>
+                  <option value="Staging">Staging</option>
+                  <option value="Development">Development</option>
+                </select>
+              </div>
+              <div class="config-group">
+                <label for="pipeSla">Latency SLA</label>
+                <select id="pipeSla">
+                  <option value="1.0s">1.0s Max</option>
+                  <option value="2.0s" selected>2.0s Max</option>
+                  <option value="3.0s">3.0s Max</option>
+                </select>
+              </div>
+            </div>
           </div>
           
           <div class="pipeline-stages">

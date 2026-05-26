@@ -270,6 +270,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (runPipelineBtn) {
     runPipelineBtn.addEventListener('click', async () => {
+      // Get dynamic inputs
+      const branch = document.getElementById('pipeBranch').value;
+      const qaSuite = document.getElementById('pipeFramework').value;
+      const targetEnv = document.getElementById('pipeEnv').value;
+      const latencySla = document.getElementById('pipeSla').value;
+
       runPipelineBtn.disabled = true;
       runPipelineBtn.textContent = 'Running...';
       pipelineConsoleLog.innerHTML = '';
@@ -280,56 +286,88 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // 1. Lint and compile stage
-      logPipeline('[Runner] Starting stage 1: Code Lint & Compilation...', '#06b6d4');
+      logPipeline(`[Runner] Starting stage 1: Code Lint & Compilation on branch [${branch}]...`, '#06b6d4');
       updateStageState('lint', 'active', 'Running...');
-      await delayMs(400);
-      logPipeline('[Runner] $ eslint --ext .js,.html . --fix');
+      await delayMs(450);
+      logPipeline(`[Runner] Checking out repository branch: refs/heads/${branch}`);
       await delayMs(300);
+      logPipeline('[Runner] $ eslint --ext .js,.html . --fix');
+      await delayMs(350);
       logPipeline('[Runner] Lint check completed: 0 errors, 0 warnings found.', '#10b981');
       updateStageState('lint', 'success', 'Passed');
 
-      // 2. Cypress E2E Regression stage
-      logPipeline('<br>[Runner] Starting stage 2: Cypress E2E Regression...', '#06b6d4');
+      // 2. QA Testing Suite (Cypress / Playwright / Newman)
+      logPipeline(`<br>[Runner] Starting stage 2: Automated Testing (${qaSuite})...`, '#06b6d4');
       updateStageState('cypress', 'active', 'Running...');
       await delayMs(500);
-      logPipeline('[Cypress] Running 8 spec files on Chrome 126 (headless)...');
-      await delayMs(400);
-      logPipeline('[Cypress] spec: portfolio_structural.cy.js -> passed (42ms)');
-      logPipeline('[Cypress] spec: about_metrics.cy.js -> passed (34ms)');
-      logPipeline('[Cypress] spec: experience_flow.cy.js -> passed (70ms)');
-      await delayMs(300);
-      logPipeline('[Cypress] All E2E assertions completed successfully. (1.12s)', '#10b981');
+
+      if (qaSuite === 'Cypress E2E') {
+        logPipeline('[Cypress] Running 8 spec files on Chrome 126 (headless)...');
+        await delayMs(350);
+        logPipeline('[Cypress] spec: portfolio_structural.cy.js -> passed (42ms)');
+        logPipeline('[Cypress] spec: about_metrics.cy.js -> passed (34ms)');
+        logPipeline('[Cypress] spec: experience_flow.cy.js -> passed (70ms)');
+        await delayMs(300);
+        logPipeline('[Cypress] All Cypress assertions completed successfully. (1.12s)', '#10b981');
+      } else if (qaSuite === 'Playwright Regression') {
+        logPipeline('[Playwright] Running E2E regression tests across Chromium, Firefox, and Webkit...');
+        await delayMs(350);
+        logPipeline('[Playwright] browser: Chromium -> 12 tests passed (450ms)');
+        logPipeline('[Playwright] browser: Firefox -> 12 tests passed (610ms)');
+        logPipeline('[Playwright] browser: Webkit -> 12 tests passed (520ms)');
+        await delayMs(300);
+        logPipeline('[Playwright] All 36 cross-browser tests PASSED. (1.58s)', '#10b981');
+      } else {
+        logPipeline('[Newman] Executing Postman API contract assertions...');
+        await delayMs(350);
+        logPipeline('[Newman] collection: payment_va_verification.json -> parsed');
+        logPipeline('[Newman] test: GET /api/v1/projects schema valid -> passed (85ms)');
+        logPipeline('[Newman] test: POST /api/v1/contact-transfer record matches -> passed (110ms)');
+        await delayMs(300);
+        logPipeline('[Newman] All API contract assertions completed successfully.', '#10b981');
+      }
       updateStageState('cypress', 'success', 'Passed');
 
       // 3. Postman API Validation stage
-      logPipeline('<br>[Runner] Starting stage 3: Postman API Validation...', '#06b6d4');
+      logPipeline('<br>[Runner] Starting stage 3: API Integration Check...', '#06b6d4');
       updateStageState('postman', 'active', 'Running...');
-      await delayMs(400);
-      logPipeline('[Newman] Sending GET /api/v1/projects -> status 200 OK (92ms)');
+      await delayMs(450);
+      logPipeline(`[Postman] Verifying mock backend services on env [${targetEnv}]...`);
       await delayMs(300);
-      logPipeline('[Newman] Sending POST /api/v1/healthcheck -> status 200 OK (45ms)');
-      logPipeline('[Newman] Schema checks passed: 100% integration validation success.', '#10b981');
+      logPipeline(`[Postman] GET /api/v1/projects -> status 200 OK (85ms)`);
+      logPipeline(`[Postman] POST /api/v1/healthcheck -> status 200 OK (42ms)`);
+      await delayMs(250);
+      logPipeline('[Postman] Schema checks passed: 100% API integration success.', '#10b981');
       updateStageState('postman', 'success', 'Passed');
 
       // 4. K6 Load & Stress testing stage
       logPipeline('<br>[Runner] Starting stage 4: K6 Latency & Load Test...', '#06b6d4');
       updateStageState('k6', 'active', 'Running...');
-      await delayMs(500);
-      logPipeline('[k6] Generating transaction load: simulating 1000 virtual users...');
+      await delayMs(550);
+      logPipeline(`[k6] Simulating 1000 virtual users targeting [${targetEnv}]...`);
       await delayMs(400);
-      logPipeline('[k6] Latency benchmark: p95 = 145ms, p99 = 280ms (Target SLA: < 2000ms)');
+      
+      const observedLatency = 145; // ms
+      const slaLimit = parseFloat(latencySla) * 1000; // ms
+      
+      logPipeline(`[k6] Latency benchmark: p95 = ${observedLatency}ms (SLA Limit: ${latencySla})`);
+      if (observedLatency < slaLimit) {
+        logPipeline(`[k6] SUCCESS: observed latency is within the SLA threshold.`, '#10b981');
+      } else {
+        logPipeline(`[k6] WARNING: observed latency is close to threshold limit.`, '#f59e0b');
+      }
       logPipeline('[k6] Request success rate: 100.00% under peak load curves.', '#10b981');
       updateStageState('k6', 'success', 'Passed');
 
       // 5. Deploy to Production stage
-      logPipeline('<br>[Runner] Starting stage 5: Production Deployment...', '#06b6d4');
+      logPipeline(`<br>[Runner] Starting stage 5: Deployment to [${targetEnv}]...`, '#06b6d4');
       updateStageState('deploy', 'active', 'Deploying...');
       await delayMs(600);
-      logPipeline('[Runner] Bundling assets and generating Edge CDN distribution...');
+      logPipeline(`[Runner] Preparing CDN build package for target: ${targetEnv}...`);
       await delayMs(400);
-      logPipeline('[Runner] Syncing build assets with remote servers...', '#9ca3af');
-      await delayMs(300);
-      logPipeline('[Runner] Deployment successfully completed! Live routes updated.', '#10b981');
+      logPipeline(`[Runner] Syncing bundle assets with Edge distributed hosts...`, '#9ca3af');
+      await delayMs(350);
+      logPipeline(`[Runner] Deployment to environment [${targetEnv}] successfully completed!`, '#10b981');
       updateStageState('deploy', 'success', 'Deployed');
 
       logPipeline('<br>[Status] PIPELINE INTEGRITY GREEN. ALL SYSTEMS STABLE.', '#10b981');
