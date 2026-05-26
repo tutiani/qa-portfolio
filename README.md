@@ -65,7 +65,7 @@ To run this project locally on your machine:
    ```
 
 3. **View the website:**
-   Open your browser and navigate to `http://localhost:8282`.
+   Open your browser and navigate to `http://172.10.66.13:8282`.
 
 ---
 
